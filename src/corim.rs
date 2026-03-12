@@ -178,6 +178,7 @@ use std::{
 };
 
 use crate::{
+    coev::ConciseEvidence,
     comid::ConciseMidTag,
     core::{CoseAlgorithm, CoseKey, CoseKeyOperation, IntegerTime, ObjectIdentifier, OneOrMore},
     coswid::ConciseSwidTag,
@@ -185,8 +186,8 @@ use crate::{
     error::CorimError,
     generate_tagged,
     numbers::Integer,
-    Digest, Empty, ExtensionMap, ExtensionValue, OidType, TaggedBytes, TaggedConciseMidTag,
-    TaggedConciseSwidTag, TaggedConciseTlTag, Text, Tstr, Uri, UuidType,
+    Digest, Empty, ExtensionMap, ExtensionValue, OidType, TaggedBytes, TaggedConciseEvidence,
+    TaggedConciseMidTag, TaggedConciseSwidTag, TaggedConciseTlTag, Text, Tstr, Uri, UuidType,
 };
 
 use coset::{iana::EnumI64 as _, AsCborValue as _, CoseSign1};
@@ -877,6 +878,8 @@ pub enum ConciseTagTypeChoice<'a> {
     Mid(TaggedConciseMidTag<'a>),
     /// A Concise Trust List (CoTL) tag
     Tl(TaggedConciseTlTag<'a>),
+    /// A Concise Evidence (CoEV) tag
+    Ev(TaggedConciseEvidence<'a>),
     /// Extension value for tags not defined by the spec
     Extension(ExtensionValue<'a>),
 }
@@ -893,6 +896,7 @@ impl Serialize for ConciseTagTypeChoice<'_> {
                 Self::Swid(tagged_coswid) => tagged_coswid.serialize(serializer),
                 Self::Mid(tagged_comid) => tagged_comid.serialize(serializer),
                 Self::Tl(tagged_cotl) => tagged_cotl.serialize(serializer),
+                Self::Ev(tagged_coev) => tagged_coev.serialize(serializer),
                 Self::Extension(ext) => ext.serialize(serializer),
             }
         } else {
@@ -915,6 +919,11 @@ impl Serialize for ConciseTagTypeChoice<'_> {
                     ciborium::into_writer(&tagged_cotl.0 .0, &mut bytes)
                         .map_err(ser::Error::custom)?;
                 }
+                Self::Ev(tagged_coev) => {
+                    tag_number = 571;
+                    ciborium::into_writer(&tagged_coev.0 .0, &mut bytes)
+                        .map_err(ser::Error::custom)?;
+                }
                 Self::Extension(ext) => {
                     return ext.serialize(serializer);
                 }
@@ -935,7 +944,7 @@ impl<'de> Deserialize<'de> for ConciseTagTypeChoice<'_> {
         impl<'de, 'a> Visitor<'de> for TagVisitor<'a> {
             type Value = ConciseTagTypeChoice<'a>;
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a tagged CBOR value (505, 506, 508)")
+                formatter.write_str("a tagged CBOR value (505, 506, 508, 571)")
             }
             fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
             where
@@ -975,6 +984,14 @@ impl<'de> Deserialize<'de> for ConciseTagTypeChoice<'_> {
                                             Ok(ConciseTagTypeChoice::Tl(TaggedConciseTlTag::new(
                                                 tl,
                                             )))
+                                        }
+                                        "coev" => {
+                                            let ev: ConciseEvidence<'a> =
+                                                serde_json::from_str(value.as_str())
+                                                    .map_err(de::Error::custom)?;
+                                            Ok(ConciseTagTypeChoice::Ev(
+                                                TaggedConciseEvidence::new(ev),
+                                            ))
                                         }
                                         s => Err(de::Error::custom(format!(
                                             "unexpected type {s} for ClassIdTypeChoice"
@@ -1020,7 +1037,7 @@ impl<'de> Deserialize<'de> for ConciseTagTypeChoice<'_> {
                     let tagged_value = ciborium::value::Value::deserialize(deserializer)?;
                     match tagged_value {
                         ciborium::Value::Tag(tag, inner) => match tag {
-                            known_tag @ (505 | 506 | 508) => {
+                            known_tag @ (505 | 506 | 508 | 571) => {
                                 let bytes: Vec<u8> = match *inner {
                                     ciborium::Value::Bytes(b) => b,
                                     _ => {
@@ -1059,6 +1076,15 @@ impl<'de> Deserialize<'de> for ConciseTagTypeChoice<'_> {
                                                 )
                                             })?;
                                         Ok(ConciseTagTypeChoice::Tl(TaggedConciseTlTag::new(tl)))
+                                    }
+                                    571 => {
+                                        let ev: ConciseEvidence<'a> =
+                                            ciborium::from_reader(&bytes[..]).map_err(|_| {
+                                                serde::de::Error::custom(
+                                                    "Failed to deserialize bytes",
+                                                )
+                                            })?;
+                                        Ok(ConciseTagTypeChoice::Ev(TaggedConciseEvidence::new(ev)))
                                     }
                                     _ => panic!("should never get here"),
                                 }

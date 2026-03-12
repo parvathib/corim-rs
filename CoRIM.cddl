@@ -9,9 +9,57 @@ concise-tl-tag = {
   &(tl-validity: 2) => validity-map
 }
 
+concise-evidence = {
+  &(ev-triples: 0) => ev-triples-map
+  ? &(evidence-id: 1) => $evidence-id-type-choice
+  ? &(profile: 2) => $profile-type-choice
+  * $$concise-evidence-extension
+}
+
+ev-triples-map = non-empty<{
+  ? &(evidence-triples: 0) =>
+    [ + reference-triple-record ]
+  ? &(identity-triples: 1) =>
+    [ + identity-triple-record ]
+  ? &(dependency-triples: 2) =>
+    [ + ev-dependency-triple-record ]
+  ? &(membership-triples: 3) =>
+    [ + ev-membership-triple-record ]
+  ? &(coswid-triples: 4) =>
+    [ + coev-coswid-triple-record ]
+  ? &(attestkey-triples: 5) =>
+    [ + attest-key-triple-record ]
+  * $$ev-triples-map-extension
+}>
+
+$evidence-id-type-choice /= tagged-uuid-type
+$evidence-id-type-choice /= tagged-oid-type
+
+ev-dependency-triple-record = [
+  $domain-type-choice
+  [ + $domain-type-choice ]
+]
+
+ev-membership-triple-record = [
+  $domain-type-choice
+  [ + environment-map ]
+]
+
+coev-coswid-triple-record = [
+  environment-map
+  [ + coev-coswid-evidence-map ]
+]
+
+coev-coswid-evidence-map = {
+  ? &(tagId: 0) => concise-swid-tag-id
+  &(evidence: 1) => evidence-entry
+  ? &(authorized-by: 2) => [ + $crypto-key-type-choice ]
+}
+
 $concise-tag-type-choice /= tagged-concise-swid-tag
 $concise-tag-type-choice /= tagged-concise-mid-tag
 $concise-tag-type-choice /= tagged-concise-tl-tag
+$concise-tag-type-choice /= tagged-concise-evidence
 
 corim-entity-map =
   entity-map<$corim-role-type-choice, $$corim-entity-map-extension>
@@ -74,6 +122,8 @@ tagged-concise-swid-tag = #6.505(bytes .cbor concise-swid-tag)
 tagged-concise-mid-tag = #6.506(bytes .cbor concise-mid-tag)
 
 tagged-concise-tl-tag = #6.508(bytes .cbor concise-tl-tag)
+
+tagged-concise-evidence = #6.571(bytes .cbor concise-evidence)
 
 tagged-unsigned-corim-map = #6.501(unsigned-corim-map)
 

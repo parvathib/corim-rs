@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+mod coev;
 mod comid;
 mod core;
 mod corim;
@@ -8,6 +9,7 @@ mod cotl;
 mod numbers;
 mod triples;
 
+pub use coev::*;
 pub use comid::*;
 pub use core::*;
 pub use corim::*;
@@ -19,6 +21,7 @@ pub use triples::*;
 
 #[derive(Debug, From)]
 pub enum Error {
+    Coev(CoevError),
     Comid(ComidError),
     Core(CoreError),
     Corim(CorimError),
@@ -35,6 +38,7 @@ impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
+            Self::Coev(err) => write!(f, "{err}"),
             Self::Comid(err) => write!(f, "{err}"),
             Self::Core(err) => write!(f, "{err}"),
             Self::Corim(err) => write!(f, "{err}"),

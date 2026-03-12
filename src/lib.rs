@@ -18,6 +18,9 @@
 #[macro_use]
 pub(crate) mod macros;
 
+/// Module containing CoEV (Concise Evidence) types and structures
+pub mod coev;
+
 /// Module containing CoMID tag types and structures
 pub mod comid;
 
@@ -62,6 +65,7 @@ pub use openssl::*;
 pub(crate) mod test;
 
 // Use all public items from each module
+pub use coev::*;
 pub use comid::*;
 pub use core::*;
 pub use corim::*;
