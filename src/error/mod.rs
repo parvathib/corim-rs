@@ -7,6 +7,7 @@ mod corim;
 mod coswid;
 mod cotl;
 mod numbers;
+pub mod ocp_safe;
 mod triples;
 
 pub use coev::*;
@@ -29,6 +30,7 @@ pub enum Error {
     Cotl(CotlError),
     Triples(TriplesError),
     Numbers(NumbersError),
+    OcpSafe(ocp_safe::OcpSafeError),
     Custom(String, String),
     Unknown,
 }
@@ -46,6 +48,7 @@ impl std::fmt::Display for Error {
             Self::Cotl(err) => write!(f, "{err}"),
             Self::Triples(err) => write!(f, "{err}"),
             Self::Numbers(err) => write!(f, "{err}"),
+            Self::OcpSafe(err) => write!(f, "{err}"),
             Self::Unknown => write!(f, "unknown error encountered!"),
             Self::Custom(err, msg) => write!(f, "{} - {}", err, msg),
         }

@@ -54,6 +54,9 @@ pub mod empty;
 /// Provides the Number Traits.
 pub mod numbers;
 
+/// CoRIM extension profiles
+pub mod profiles;
+
 /// Optional signing implementation
 #[cfg(feature = "openssl")]
 pub mod openssl;
